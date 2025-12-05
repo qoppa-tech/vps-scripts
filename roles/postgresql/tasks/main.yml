@@ -29,7 +29,7 @@
 - name: Start PostgreSQL container
   ansible.builtin.shell: |
     cd {{ postgres_app_dir }}
-    docker compose up -d
+    sudo docker compose up -d
   become: true
   become_user: "{{ deploy_user }}"
   register: compose_result

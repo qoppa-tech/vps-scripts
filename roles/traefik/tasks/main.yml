@@ -51,7 +51,7 @@
 
 - name: Create Docker network for Parlor
   ansible.builtin.shell: |
-    docker network create parlor-network || true
+    sudo docker network create parlor-network || true
   become: true
   become_user: "{{ deploy_user }}"
   changed_when: false
@@ -59,7 +59,7 @@
 - name: Start Traefik container
   ansible.builtin.shell: |
     cd {{ traefik_app_dir }}
-    docker compose up -d
+    sudo docker compose up -d
   become: true
   become_user: "{{ deploy_user }}"
   register: traefik_compose_result
