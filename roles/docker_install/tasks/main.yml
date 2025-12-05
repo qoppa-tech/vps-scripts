@@ -32,12 +32,12 @@
   ansible.builtin.command:
     cmd: gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.gpg.asc
     creates: /etc/apt/keyrings/docker.gpg
-  when: not docker_gpg_key.stat.exists
 
 - name: Set permissions on Docker GPG key
   ansible.builtin.file:
     path: /etc/apt/keyrings/docker.gpg
     mode: '0644'
+  when: not ansible_check_mode
 
 - name: Get dpkg architecture
   ansible.builtin.command: dpkg --print-architecture
