@@ -1,0 +1,33 @@
+# Traefik Dynamic Configuration
+http:
+  routers:
+    # Landing Page Router
+    landing:
+      rule: "Host(`{{ landing_domain }}`)"
+      entryPoints:
+        - websecure
+      service: landing
+      tls:
+        certResolver: letsencrypt
+
+    # API Core Router  
+    api-core:
+      rule: "Host(`{{ api_domain }}`)"
+      entryPoints:
+        - websecure
+      service: api-core
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    # Landing Page Service
+    landing:
+      loadBalancer:
+        servers:
+          - url: "http://landing:4321"
+
+    # API Core Service
+    api-core:
+      loadBalancer:
+        servers:
+          - url: "http://api-core:8080"

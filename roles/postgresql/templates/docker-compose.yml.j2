@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: {{ postgres_image }}
+    container_name: postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:{{ postgres_port }}:5432"
+    environment:
+      POSTGRES_DB: {{ postgres_db }}
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+    volumes:
+      - {{ postgres_data_dir }}:/var/lib/postgresql/data
+    networks:
+      - parlor-network
+
+networks:
+  parlor-network:
+    external: true

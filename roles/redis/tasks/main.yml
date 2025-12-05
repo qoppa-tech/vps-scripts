@@ -1,0 +1,36 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for redis
+
+- name: Create Redis data directory
+  ansible.builtin.file:
+    path: "{{ redis_data_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+
+- name: Create Redis app directory
+  ansible.builtin.file:
+    path: "{{ redis_app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+
+- name: Deploy docker-compose.yml for Redis
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ redis_app_dir }}/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+
+- name: Start Redis container
+  ansible.builtin.shell: |
+    cd {{ redis_app_dir }}
+    docker compose up -d
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: compose_result
+  changed_when: "'Started' in compose_result.stdout or 'Creating' in compose_result.stdout"

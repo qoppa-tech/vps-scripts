@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api-core:
+    image: {{ apicore_image }}
+    container_name: api-core
+    restart: unless-stopped
+    ports:
+      - "{{ apicore_port }}:8080"
+    environment:
+      - DATABASE_URL=postgresql://{{ postgres_user }}:{{ postgres_password }}@{{ postgres_host }}:{{ postgres_port }}/{{ postgres_db }}
+      - REDIS_URL=redis://{{ redis_host }}:{{ redis_port }}
+      - NODE_ENV=production
+    networks:
+      - parlor-network
+    depends_on:
+      - postgres
+      - redis
+
+networks:
+  parlor-network:
+    external: true

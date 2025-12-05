@@ -1,0 +1,38 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for deploy_landing
+
+- name: Create landing app directory
+  ansible.builtin.file:
+    path: "{{ landing_app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+
+- name: Deploy docker-compose.yml for landing
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ landing_app_dir }}/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+  notify: Restart landing
+
+- name: Pull latest landing image
+  ansible.builtin.shell: |
+    cd {{ landing_app_dir }}
+    docker compose pull
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout or 'Pull complete' in pull_result.stdout"
+
+- name: Start landing containers
+  ansible.builtin.shell: |
+    cd {{ landing_app_dir }}
+    docker compose up -d --remove-orphans
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: compose_result
+  changed_when: "'Started' in compose_result.stdout or 'Creating' in compose_result.stdout"

@@ -1,0 +1,12 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for postgresql
+
+deploy_user: parloruser
+postgres_app_dir: /home/{{ deploy_user }}/postgres
+postgres_data_dir: /home/{{ deploy_user }}/postgres/data
+postgres_image: postgres:16-alpine
+postgres_port: 5432
+postgres_db: apicore
+postgres_user: apicore
+postgres_password: ""

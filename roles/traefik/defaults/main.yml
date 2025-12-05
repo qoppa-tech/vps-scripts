@@ -1,0 +1,18 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for traefik
+
+deploy_user: parloruser
+traefik_app_dir: /home/{{ deploy_user }}/traefik
+traefik_image: traefik:v3.0
+
+# Domains
+landing_domain: landing.parlorharpia.tech
+api_domain: api.parlorharpia.tech
+
+# Ports (internal)
+landing_port: 4321
+apiscore_port: 8080
+
+# Let's Encrypt
+acme_email: admin@parlorharpia.tech

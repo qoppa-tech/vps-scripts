@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  landing:
+    image: {{ landing_image }}
+    container_name: landing
+    restart: unless-stopped
+    ports:
+      - "{{ landing_port }}:4321"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - parlor-network
+
+networks:
+  parlor-network:
+    external: true

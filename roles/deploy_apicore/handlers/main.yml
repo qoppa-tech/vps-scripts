@@ -1,0 +1,11 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for deploy_apicore
+
+- name: Restart api-core
+  ansible.builtin.shell: |
+    cd {{ apicore_app_dir }}
+    docker compose down
+    docker compose up -d
+  become: true
+  become_user: "{{ deploy_user }}"

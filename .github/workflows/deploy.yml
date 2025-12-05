@@ -1,0 +1,70 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'playbook.yml'
+      - 'roles/**'
+      - 'group_vars/**'
+      - 'inventory'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible and dependencies
+        run: pip install ansible passlib
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 159.65.64.206 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > ~/.ssh/id_ed25519.pub
+
+      - name: Create secrets file
+        run: |
+          mkdir -p group_vars
+          cat > group_vars/secrets.yml << EOF
+          user_password: "${{ secrets.USER_PASSWORD }}"
+          postgres_password: "${{ secrets.POSTGRES_PASSWORD }}"
+          ghcr_user: "${{ github.repository_owner }}"
+          ghcr_token: "${{ secrets.GHCR_TOKEN }}"
+          EOF
+
+      - name: Dry-run (check mode)
+        id: check
+        run: |
+          set -euo pipefail
+          ansible-playbook -i inventory playbook.yml --check -v | tee /tmp/ansible-check.log
+          if grep -q "changed=0.*failed=0" /tmp/ansible-check.log; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "--- check summary ---"
+          tail -n 20 /tmp/ansible-check.log
+
+      - name: Run Ansible playbook (apply)
+        if: steps.check.outputs.changed == 'true'
+        run: ansible-playbook -i inventory playbook.yml -v
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf ~/.ssh/id_ed25519 group_vars/secrets.yml
+          shred -fuz ~/.ssh/id_ed25519 group_vars/secrets.yml 2>/dev/null || true

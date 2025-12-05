@@ -1,0 +1,66 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for traefik
+
+- name: Create Traefik directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+  loop:
+    - "{{ traefik_app_dir }}"
+    - "{{ traefik_app_dir }}/config"
+    - "{{ traefik_app_dir }}/letsencrypt"
+
+- name: Create acme.json for Let's Encrypt
+  ansible.builtin.file:
+    path: "{{ traefik_app_dir }}/letsencrypt/acme.json"
+    state: touch
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0600'
+
+- name: Deploy Traefik static config
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: "{{ traefik_app_dir }}/config/traefik.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+  notify: Restart traefik
+
+- name: Deploy Traefik dynamic config
+  ansible.builtin.template:
+    src: dynamic.yml.j2
+    dest: "{{ traefik_app_dir }}/config/dynamic.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+  notify: Restart traefik
+
+- name: Deploy docker-compose.yml for Traefik
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ traefik_app_dir }}/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+  notify: Restart traefik
+
+- name: Create Docker network for Parlor
+  ansible.builtin.shell: |
+    docker network create parlor-network || true
+  become: true
+  become_user: "{{ deploy_user }}"
+  changed_when: false
+
+- name: Start Traefik container
+  ansible.builtin.shell: |
+    cd {{ traefik_app_dir }}
+    docker compose up -d
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: traefik_compose_result
+  changed_when: "'Started' in traefik_compose_result.stdout or 'Creating' in traefik_compose_result.stdout"

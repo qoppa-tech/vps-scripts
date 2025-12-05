@@ -1,142 +1,66 @@
-- name: Configure VPS and create secure user
+# Parlor VPS Deployment Playbook
+- name: Configure Server
   hosts: vps
   become: true
+  vars_files:
+    - group_vars/secrets.yml
+  roles:
+    - configure_server
+
+- name: Install Docker
+  hosts: vps
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
+  roles:
+    - docker_install
+
+- name: Setup Traefik Reverse Proxy
+  hosts: vps
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
   vars:
-    hashed_password: "{{ user_password | password_hash('sha512') }}"
-  vars_files:
-    - group_vars/secrets.yml # specially for first way
+    landing_domain: landing.parlorharpia.tech
+    api_domain: api.parlorharpia.tech
+    acme_email: "{{ admin_email | default('admin@parlorharpia.tech') }}"
+  roles:
+    - traefik
 
-  tasks:
-    - name: Create user
-      ansible.builtin.user:
-        name: parloruser
-        groups: sudo
-        append: true
-        shell: /bin/bash
-
-    - name: Set password for user (hashed)
-      ansible.builtin.user:
-        name: parloruser
-        password: "{{ hashed_password }}"
-
-    - name: Allow passwordless sudo
-      ansible.builtin.copy:
-        dest: /etc/sudoers.d/parloruser
-        content: "parloruser ALL=(ALL) NOPASSWD:ALL"
-        owner: root
-        group: root
-        mode: '0440'
-
-    - name: Disable root SSH login
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "^PermitRootLogin"
-        line: "PermitRootLogin no"
-
-    - name: Restart SSH
-      ansible.builtin.service:
-        name: ssh
-        state: restarted
-
-- name: Add SSH keys for parloruser
-  hosts: vps
-  become: false
-  vars_files:
-    - group_vars/secrets.yml
-
-  tasks:
-    - name: Add authorized key for the user
-      ansible.builtin.authorized_key:
-        user: parloruser
-        key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
-
-    - name: Add authorized key for natan
-      ansible.builtin.authorized_key:
-        user: parloruser
-        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILpv53RQ/GpPGSVMMIhwNwsrPoNzop6VJGayqjfQsXCN natan@uma-maquina-minha"
-
-- name: Deploy API-Core
+- name: Setup PostgreSQL
   hosts: vps
   become: true
   vars_files:
     - group_vars/secrets.yml
+  roles:
+    - postgresql
 
-  tasks:
-    - name: Ensure git is installed
-      ansible.builtin.package:
-        name: git
-        state: present
+- name: Setup Redis
+  hosts: vps
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
+  roles:
+    - redis
 
-    - name: Create .ssh directory for parloruser
-      ansible.builtin.file:
-        path: /home/parloruser/.ssh
-        state: directory
-        owner: parloruser
-        group: parloruser
-        mode: '0700'
+- name: Deploy API Core
+  hosts: vps
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
+  vars:
+    apicore_image: ghcr.io/parlorhub/api-core:latest
+    postgres_host: postgres
+    redis_host: redis
+  roles:
+    - deploy_apicore
 
-    - name: Copy GitHub SSH private key
-      ansible.builtin.copy:
-        content: "{{ github_ssh_key }}"
-        dest: /home/parloruser/.ssh/id_rsa_github
-        owner: parloruser
-        group: parloruser
-        mode: '0600'
-
-    - name: Add GitHub to known_hosts
-      ansible.builtin.known_hosts:
-        name: github.com
-        key: "{{ lookup('pipe', 'ssh-keyscan -t rsa github.com 2>/dev/null') }}"
-        state: present
-
-    - name: Configure SSH config for GitHub
-      ansible.builtin.copy:
-        content: |
-          Host github.com
-            HostName github.com
-            User git
-            IdentityFile ~/.ssh/id_rsa_github
-            StrictHostKeyChecking no
-        dest: /home/parloruser/.ssh/config
-        owner: parloruser
-        group: parloruser
-        mode: '0600'
-
-    - name: Clone API-Core repository (private)
-      ansible.builtin.git:
-        repo: 'git@github.com:parlorhub/api-core.git'
-        dest: '/home/parloruser/api-core'
-        version: main
-        accept_hostkey: true
-        key_file: '/home/parloruser/.ssh/id_rsa_github'
-      become: false
-      become_user: parloruser
-      environment:
-        GIT_SSH_COMMAND: "ssh -i /home/parloruser/.ssh/id_rsa_github -o StrictHostKeyChecking=no"
-
-    - name: Ensure docker and docker-compose are installed
-      ansible.builtin.package:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - docker
-        - docker-compose
-
-    - name: Start Docker service
-      ansible.builtin.service:
-        name: docker
-        state: started
-        enabled: true
-
-    - name: Add parloruser to docker group
-      ansible.builtin.user:
-        name: parloruser
-        groups: docker
-        append: true
-
-    - name: Run docker-compose up
-      ansible.builtin.shell: |
-        cd /home/parloruser/api-core
-        docker-compose up -d
-      become: false
-      become_user: parloruser
+- name: Deploy Landing Page
+  hosts: vps
+  become: true
+  vars_files:
+    - group_vars/secrets.yml
+  vars:
+    landing_image: ghcr.io/parlorhub/landing-page:latest
+  roles:
+    - deploy_landing

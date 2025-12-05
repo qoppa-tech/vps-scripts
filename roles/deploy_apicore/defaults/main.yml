@@ -1,0 +1,19 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for deploy_apicore
+
+deploy_user: parloruser
+apiscore_app_dir: /home/{{ deploy_user }}/api-core
+apiscore_image: ghcr.io/parlorhub/api-core:latest
+apiscore_port: 8080
+
+# Database
+postgres_host: postgres
+postgres_port: 5432
+postgres_db: apicore
+postgres_user: apicore
+postgres_password: ""
+
+# Redis
+redis_host: redis
+redis_port: 6379

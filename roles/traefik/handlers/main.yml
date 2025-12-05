@@ -1,0 +1,10 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for traefik
+
+- name: Restart traefik
+  ansible.builtin.shell: |
+    cd {{ traefik_app_dir }}
+    docker compose restart
+  become: true
+  become_user: "{{ deploy_user }}"
