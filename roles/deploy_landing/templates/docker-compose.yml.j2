@@ -4,7 +4,7 @@ services:
     container_name: landing
     restart: unless-stopped
     ports:
-      - "{{ landing_port }}:4321"
+      - "{{ landing_port }}:80"
     environment:
       - NODE_ENV=production
     networks:
