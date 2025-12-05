@@ -12,6 +12,8 @@
   become: true
   vars_files:
     - group_vars/secrets.yml
+  vars:
+    deploy_user: parloruser
   pre_tasks:
     - name: Remove stale Docker repo files
       ansible.builtin.file:
