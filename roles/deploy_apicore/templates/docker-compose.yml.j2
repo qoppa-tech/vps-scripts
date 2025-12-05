@@ -6,9 +6,20 @@ services:
     ports:
       - "{{ apicore_port }}:8080"
     environment:
-      - DATABASE_URL=postgresql://{{ postgres_user }}:{{ postgres_password }}@{{ postgres_host }}:{{ postgres_port }}/{{ postgres_db }}
-      - REDIS_URL=redis://{{ redis_host }}:{{ redis_port }}
-      - NODE_ENV=production
+      # Database
+      - DB_HOST={{ postgres_host }}
+      - DB_PORT={{ postgres_port }}
+      - DB_DATABASE={{ postgres_db }}
+      - DB_USERNAME={{ postgres_user }}
+      - DB_PASSWORD={{ postgres_password }}
+      # Redis
+      - REDIS_HOST={{ redis_host }}
+      - REDIS_PORT={{ redis_port }}
+      - REDIS_PASSWORD={{ redis_password | default('') }}
+      # App
+      - PORT=8080
+      - GIN_MODE=release
+      - CORS_ORIGINS=*
     networks:
       - parlor-network
 
