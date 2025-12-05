@@ -17,9 +17,26 @@
     docker_install_buildx_plugin: true
     docker_users:
       - "{{ deploy_user }}"
+  pre_tasks:
+    - name: Remove stale Docker repo files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/download_docker_com_linux_ubuntu.list
+        - /etc/apt/keyrings/docker.gpg
+      ignore_errors: true
+
+    - name: Update apt cache before Docker install
+      ansible.builtin.apt:
+        update_cache: true
   roles:
     - geerlingguy.docker
-  tasks:
+  post_tasks:
+    - name: Force apt update after Docker repo added
+      ansible.builtin.apt:
+        update_cache: true
+
     - name: Login to GitHub Container Registry
       ansible.builtin.shell: |
         echo "{{ ghcr_token }}" | docker login ghcr.io -u {{ ghcr_user }} --password-stdin
