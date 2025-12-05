@@ -12,8 +12,21 @@
   become: true
   vars_files:
     - group_vars/secrets.yml
+  vars:
+    docker_install_compose_plugin: true
+    docker_install_buildx_plugin: true
+    docker_users:
+      - "{{ deploy_user }}"
   roles:
-    - docker_install
+    - geerlingguy.docker
+  tasks:
+    - name: Login to GitHub Container Registry
+      ansible.builtin.shell: |
+        echo "{{ ghcr_token }}" | docker login ghcr.io -u {{ ghcr_user }} --password-stdin
+      become: true
+      become_user: "{{ deploy_user }}"
+      when: ghcr_token is defined and ghcr_token | length > 0
+      no_log: true
 
 - name: Setup Traefik Reverse Proxy
   hosts: vps
