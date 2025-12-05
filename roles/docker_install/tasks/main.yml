@@ -58,10 +58,17 @@
     append: true
   when: not ansible_check_mode
 
-- name: Login to GitHub Container Registry
+- name: Login to GitHub Container Registry (user)
   ansible.builtin.shell: |
     echo "{{ ghcr_token }}" | docker login ghcr.io -u {{ ghcr_user }} --password-stdin
   become: true
   become_user: "{{ deploy_user }}"
+  when: ghcr_token is defined and ghcr_token | length > 0 and not ansible_check_mode
+  no_log: true
+
+- name: Login to GitHub Container Registry (root)
+  ansible.builtin.shell: |
+    echo "{{ ghcr_token }}" | docker login ghcr.io -u {{ ghcr_user }} --password-stdin
+  become: true
   when: ghcr_token is defined and ghcr_token | length > 0 and not ansible_check_mode
   no_log: true
