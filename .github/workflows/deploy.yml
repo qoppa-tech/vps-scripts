@@ -33,9 +33,6 @@ jobs:
       - name: Install Ansible and dependencies
         run: pip install ansible passlib
 
-      - name: Install Ansible Galaxy roles
-        run: ansible-galaxy role install -r requirements.yml
-
       - name: Setup SSH
         run: |
           set -euo pipefail

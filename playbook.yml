@@ -12,11 +12,6 @@
   become: true
   vars_files:
     - group_vars/secrets.yml
-  vars:
-    docker_install_compose_plugin: true
-    docker_install_buildx_plugin: true
-    docker_users:
-      - "{{ deploy_user }}"
   pre_tasks:
     - name: Remove stale Docker repo files
       ansible.builtin.file:
@@ -24,26 +19,11 @@
         state: absent
       loop:
         - /etc/apt/sources.list.d/download_docker_com_linux_ubuntu.list
-        - /etc/apt/keyrings/docker.gpg
+        - /etc/apt/sources.list.d/docker.list
+        - /etc/apt/trusted.gpg.d/docker.asc
       ignore_errors: true
-
-    - name: Update apt cache before Docker install
-      ansible.builtin.apt:
-        update_cache: true
   roles:
-    - geerlingguy.docker
-  post_tasks:
-    - name: Force apt update after Docker repo added
-      ansible.builtin.apt:
-        update_cache: true
-
-    - name: Login to GitHub Container Registry
-      ansible.builtin.shell: |
-        echo "{{ ghcr_token }}" | docker login ghcr.io -u {{ ghcr_user }} --password-stdin
-      become: true
-      become_user: "{{ deploy_user }}"
-      when: ghcr_token is defined and ghcr_token | length > 0
-      no_log: true
+    - docker_install
 
 - name: Setup Traefik Reverse Proxy
   hosts: vps
