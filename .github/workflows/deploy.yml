@@ -25,26 +25,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify required secrets are present
-        env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        run: |
-          set -euo pipefail
-          missing=0
-          for var in VPS_SSH_KEY USER_PASSWORD POSTGRES_PASSWORD GHCR_TOKEN; do
-            if [ -z "${!var}" ]; then
-              echo "Secret $var is empty or not available to this run." >&2
-              missing=1
-            fi
-          done
-          if [ $missing -ne 0 ]; then
-            echo "One or more required secrets are missing. If this run came from a fork/PR or a protected environment, GitHub does not expose secrets. Use workflow_dispatch from this repo or push from a branch in this repo." >&2
-            exit 1
-          fi
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -56,15 +36,12 @@ jobs:
       - name: Setup SSH
         run: |
           set -euo pipefail
-
           if [ -z "${{ env.VPS_SSH_KEY }}" ]; then
             echo "VPS_SSH_KEY is empty or not set" >&2
             exit 1
           fi
-
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-
           # Write SSH key, handling optional base64 encoding and stripping CRLF.
           KEY_CONTENT="${{ env.VPS_SSH_KEY }}"
           if echo "$KEY_CONTENT" | grep -q "^LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZ"; then
@@ -72,18 +49,14 @@ jobs:
           else
             printf '%s\n' "$KEY_CONTENT" | tr -d '\r' > ~/.ssh/id_ed25519
           fi
-
           chmod 600 ~/.ssh/id_ed25519
-
           # Fail fast if the key is invalid.
           if ! ssh-keygen -y -f ~/.ssh/id_ed25519 > ~/.ssh/id_ed25519.pub; then
             echo "Provided VPS_SSH_KEY is not a valid private key" >&2
             exit 1
           fi
-
           # Add host key to known_hosts to avoid host key prompts.
           ssh-keyscan -T 10 -H 159.65.64.206 >> ~/.ssh/known_hosts 2>/dev/null
-
       - name: Create secrets file
         run: |
           mkdir -p group_vars
@@ -93,7 +66,6 @@ jobs:
           ghcr_user: "${{ github.repository_owner }}"
           ghcr_token: "${{ env.GHCR_TOKEN }}"
           EOF
-
       - name: Dry-run (check mode)
         id: check
         run: |
@@ -106,7 +78,6 @@ jobs:
           fi
           echo "--- check summary ---"
           tail -n 20 /tmp/ansible-check.log
-
       - name: Run Ansible playbook (apply)
         if: steps.check.outputs.changed == 'true'
         run: ansible-playbook -i inventory playbook.yml -v
