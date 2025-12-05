@@ -25,6 +25,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify required secrets are present
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for var in VPS_SSH_KEY USER_PASSWORD POSTGRES_PASSWORD GHCR_TOKEN; do
+            if [ -z "${!var}" ]; then
+              echo "Secret $var is empty or not available to this run." >&2
+              missing=1
+            fi
+          done
+          if [ $missing -ne 0 ]; then
+            echo "One or more required secrets are missing. If this run came from a fork/PR or a protected environment, GitHub does not expose secrets. Use workflow_dispatch from this repo or push from a branch in this repo." >&2
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
