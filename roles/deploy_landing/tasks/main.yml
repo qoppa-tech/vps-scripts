@@ -27,6 +27,7 @@
   become_user: "{{ deploy_user }}"
   register: pull_result
   changed_when: "'Downloaded' in pull_result.stdout or 'Pull complete' in pull_result.stdout"
+  when: not ansible_check_mode
 
 - name: Start landing containers
   ansible.builtin.shell: |
@@ -36,3 +37,4 @@
   become_user: "{{ deploy_user }}"
   register: compose_result
   changed_when: "'Started' in compose_result.stdout or 'Creating' in compose_result.stdout"
+  when: not ansible_check_mode

@@ -3,9 +3,9 @@
 # defaults file for deploy_apicore
 
 deploy_user: parloruser
-apiscore_app_dir: /home/{{ deploy_user }}/api-core
-apiscore_image: ghcr.io/parlorhub/api-core:latest
-apiscore_port: 8080
+apicore_app_dir: /home/{{ deploy_user }}/api-core
+apicore_image: ghcr.io/parlorhub/api-core:latest
+apicore_port: 8080
 
 # Database
 postgres_host: postgres

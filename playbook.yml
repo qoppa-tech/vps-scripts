@@ -59,7 +59,10 @@
   vars_files:
     - group_vars/secrets.yml
   vars:
+    deploy_user: parloruser
+    apicore_app_dir: /home/{{ deploy_user }}/api-core
     apicore_image: ghcr.io/parlorhub/api-core:latest
+    apicore_port: 8080
     postgres_host: postgres
     redis_host: redis
   roles:
@@ -71,6 +74,9 @@
   vars_files:
     - group_vars/secrets.yml
   vars:
+    deploy_user: parloruser
+    landing_app_dir: /home/{{ deploy_user }}/landing
     landing_image: ghcr.io/parlorhub/landing-page:latest
+    landing_port: 4321
   roles:
     - deploy_landing
