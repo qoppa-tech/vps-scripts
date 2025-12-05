@@ -37,6 +37,37 @@
   register: pull_result
   changed_when: "'Downloaded' in pull_result.stdout or 'Pull complete' in pull_result.stdout"
 
+- name: Create migrations directory
+  ansible.builtin.file:
+    path: "{{ apicore_app_dir }}/migrations"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+
+- name: Extract migrations from api-core image
+  ansible.builtin.shell: |
+    sudo docker create --name api-core-temp {{ apicore_image }} 2>/dev/null || true
+    sudo docker cp api-core-temp:/migrations/. {{ apicore_app_dir }}/migrations/ 2>/dev/null || true
+    sudo docker rm api-core-temp 2>/dev/null || true
+  become: true
+  become_user: "{{ deploy_user }}"
+  changed_when: false
+  failed_when: false
+
+- name: Run database migrations
+  ansible.builtin.shell: |
+    sudo docker run --rm --network parlor-network \
+      -v {{ apicore_app_dir }}/migrations:/migrations \
+      migrate/migrate \
+      -path=/migrations \
+      -database "postgres://{{ postgres_user }}:{{ postgres_password }}@{{ postgres_host }}:{{ postgres_port }}/{{ postgres_db }}?sslmode=disable" up
+  become: true
+  become_user: "{{ deploy_user }}"
+  register: migrate_result
+  changed_when: "'no change' not in migrate_result.stdout"
+  failed_when: false
+
 - name: Start api-core containers
   ansible.builtin.shell: |
     cd {{ apicore_app_dir }}

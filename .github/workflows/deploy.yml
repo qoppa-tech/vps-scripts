@@ -11,11 +11,6 @@ on:
       - 'inventory'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
-env:
-  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-  USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
 jobs:
 
@@ -36,14 +31,14 @@ jobs:
       - name: Setup SSH
         run: |
           set -euo pipefail
-          if [ -z "${{ env.VPS_SSH_KEY }}" ]; then
+          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
             echo "VPS_SSH_KEY is empty or not set" >&2
             exit 1
           fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           # Write SSH key, handling optional base64 encoding and stripping CRLF.
-          KEY_CONTENT="${{ env.VPS_SSH_KEY }}"
+          KEY_CONTENT="${{ secrets.VPS_SSH_KEY }}"
           if echo "$KEY_CONTENT" | grep -q "^LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZ"; then
             echo "$KEY_CONTENT" | tr -d '\r' | base64 -d > ~/.ssh/id_ed25519
           else
@@ -61,10 +56,15 @@ jobs:
         run: |
           mkdir -p group_vars
           cat > group_vars/secrets.yml << EOF
-          user_password: "${{ env.USER_PASSWORD }}"
-          postgres_password: "${{ env.POSTGRES_PASSWORD }}"
+          user_password: "${{ secrets.USER_PASSWORD }}"
+          postgres_password: "${{ secrets.POSTGRES_PASSWORD }}"
           ghcr_user: "${{ github.repository_owner }}"
-          ghcr_token: "${{ env.GHCR_TOKEN }}"
+          ghcr_token: "${{ secrets.GHCR_TOKEN }}"
+          jwt_secret: "${{ secrets.JWT_SECRET }}"
+          redis_password: "${{ secrets.REDIS_PASSWORD }}"
+          mailtrap_token: "${{ secrets.MAILTRAP_TOKEN }}"
+          google_client_id: "${{ secrets.GOOGLE_CLIENT_ID }}"
+          google_client_secret: "${{ secrets.GOOGLE_CLIENT_SECRET }}"
           EOF
       - name: Dry-run (check mode)
         id: check
