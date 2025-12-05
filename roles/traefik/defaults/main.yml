@@ -10,9 +10,9 @@ traefik_image: traefik:v3.0
 landing_domain: landing.parlorharpia.tech
 api_domain: api.parlorharpia.tech
 
-# Ports (internal)
-landing_port: 4321
-apiscore_port: 8080
+# Ports (internal container ports for Traefik routing)
+landing_internal_port: 80
+apicore_internal_port: 8080
 
 # Let's Encrypt
-acme_email: admin@parlorharpia.tech
+acme_email: daniel@parlorharpia.tech
